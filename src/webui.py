@@ -177,21 +177,21 @@ if __name__ == '__main__':
                 with gr.Row():
                     with gr.Column():
                         rvc_model = gr.Dropdown(voice_models, label='Voice Models', info='Models folder "AICoverGen --> rvc_models". After new models are added into this folder, click the refresh button')
-                        ref_btn = gr.Button('Refresh Models 🔁', variant='primary')
+                        ref_btn = gr.Button('Refresh Models', variant='primary')
 
-                    with gr.Column() as yt_link_col:
-                        song_input = gr.Text(label='Song input', info='Link to a song on YouTube or full path to a local file. For file upload, click the button below.')
-                        show_file_upload_button = gr.Button('Upload file instead')
-
-                    with gr.Column(visible=False) as file_upload_col:
+                    with gr.Column() as file_upload_col:
                         local_file = gr.File(label='Audio file')
-                        song_input_file = gr.UploadButton('Upload 📂', file_types=['audio'], variant='primary')
+                        song_input_file = gr.UploadButton('Upload', file_types=['audio'], variant='primary')
                         show_yt_link_button = gr.Button('Paste YouTube link/Path to local file instead')
                         song_input_file.upload(process_file_upload, inputs=[song_input_file], outputs=[local_file, song_input])
 
+
+                    with gr.Column() as yt_link_col:
+                        song_input = gr.Text(label='Song input', info='Link to a song on YouTube or full path to a local file. For file upload, click the button below.')
+                        
+                    
                     with gr.Column():
                         pitch = gr.Slider(-3, 3, value=0, step=1, label='Pitch Change (Vocals ONLY)', info='Generally, use 1 for male to female conversions and -1 for vice-versa. (Octaves)')
-                        pitch_all = gr.Slider(-12, 12, value=0, step=1, label='Overall Pitch Change', info='Changes pitch/key of vocals and instrumentals together. Altering this slightly reduces sound quality. (Semitones)')
                     show_file_upload_button.click(swap_visibility, outputs=[file_upload_col, yt_link_col, song_input, local_file])
                     show_yt_link_button.click(swap_visibility, outputs=[yt_link_col, file_upload_col, song_input, local_file])
 
@@ -227,7 +227,7 @@ if __name__ == '__main__':
             with gr.Row():
                 clear_btn = gr.ClearButton(value='Clear', components=[song_input, rvc_model, keep_files, local_file])
                 generate_btn = gr.Button("Generate", variant='primary')
-                ai_cover = gr.Audio(label='AI Cover', show_share_button=False)
+                ai_cover = gr.Audio(label='output', show_share_button=False)
 
             ref_btn.click(update_models_list, None, outputs=rvc_model)
             is_webui = gr.Number(value=1, visible=False)
@@ -236,11 +236,11 @@ if __name__ == '__main__':
                                        inst_gain, index_rate, filter_radius, rms_mix_rate, f0_method, crepe_hop_length,
                                        protect, pitch_all, reverb_rm_size, reverb_wet, reverb_dry, reverb_damping,
                                        output_format],
-                               outputs=[ai_cover])
+                               outputs=[output])
             clear_btn.click(lambda: [0, 0, 0, 0, 0.5, 3, 0.25, 0.33, 'rmvpe', 128, 0, 0.15, 0.2, 0.8, 0.7, 'mp3', None],
                             outputs=[pitch, main_gain, backup_gain, inst_gain, index_rate, filter_radius, rms_mix_rate,
-                                     protect, f0_method, crepe_hop_length, pitch_all, reverb_rm_size, reverb_wet,
-                                     reverb_dry, reverb_damping, output_format, ai_cover])
+                                     protect, f0_method, crepe_hop_length, reverb_rm_size, reverb_wet,
+                                     reverb_dry, reverb_damping, output_format, output])
 
         # Download tab
         with gr.Tab('Download model'):
@@ -251,7 +251,7 @@ if __name__ == '__main__':
                     model_name = gr.Text(label='Name your model', info='Give your new model a unique name from your other voice models.')
 
                 with gr.Row():
-                    download_btn = gr.Button('Download 🌐', variant='primary', scale=19)
+                    download_btn = gr.Button('Download', variant='primary', scale=19)
                     dl_output_message = gr.Text(label='Output Message', interactive=False, scale=20)
 
                 download_btn.click(download_online_model, inputs=[model_zip_link, model_name], outputs=dl_output_message)
@@ -260,8 +260,8 @@ if __name__ == '__main__':
                 gr.Examples(
                     [
                         ['https://huggingface.co/phant0m4r/LiSA/resolve/main/LiSA.zip', 'Lisa'],
-                        ['https://pixeldrain.com/u/3tJmABXA', 'Gura'],
-                        ['https://huggingface.co/Kit-Lemonfoot/kitlemonfoot_rvc_models/resolve/main/AZKi%20(Hybrid).zip', 'Azki']
+                        ['https://huggingface.co/ccateni/OldModels/resolve/main/Sonic28.zip?download=true', 'Sonic'],
+                        ['https://huggingface.co/LaynzID12/RVC/resolve/main/BF.zip?download=true', 'BF']
                     ],
                     [model_zip_link, model_name],
                     [],
@@ -281,7 +281,7 @@ if __name__ == '__main__':
                     pub_model_name = gr.Text(label='Model name')
 
                 with gr.Row():
-                    download_pub_btn = gr.Button('Download 🌐', variant='primary', scale=19)
+                    download_pub_btn = gr.Button('Download', variant='primary', scale=19)
                     pub_dl_output_message = gr.Text(label='Output Message', interactive=False, scale=20)
 
                 filter_tags = gr.CheckboxGroup(value=[], label='Show voice models with tags', choices=[])
@@ -294,25 +294,6 @@ if __name__ == '__main__':
                 search_query.change(filter_models, inputs=[filter_tags, search_query], outputs=public_models_table)
                 filter_tags.change(filter_models, inputs=[filter_tags, search_query], outputs=public_models_table)
                 download_pub_btn.click(download_online_model, inputs=[pub_zip_link, pub_model_name], outputs=pub_dl_output_message)
-
-        # Upload tab
-        with gr.Tab('Upload model'):
-            gr.Markdown('## Upload locally trained RVC v2 model and index file')
-            gr.Markdown('- Find model file (weights folder) and optional index file (logs/[name] folder)')
-            gr.Markdown('- Compress files into zip file')
-            gr.Markdown('- Upload zip file and give unique name for voice')
-            gr.Markdown('- Click Upload model')
-
-            with gr.Row():
-                with gr.Column():
-                    zip_file = gr.File(label='Zip file')
-
-                local_model_name = gr.Text(label='Model name')
-
-            with gr.Row():
-                model_upload_button = gr.Button('Upload model', variant='primary', scale=19)
-                local_upload_output_message = gr.Text(label='Output Message', interactive=False, scale=20)
-                model_upload_button.click(upload_local_model, inputs=[zip_file, local_model_name], outputs=local_upload_output_message)
 
     app.launch(
         share=args.share_enabled,
